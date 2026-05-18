@@ -26,3 +26,9 @@ Next.js frontend
 - Some LSJ glosses are noisy or poorly ranked
 - Homeric forms sometimes require curated overrides
 - Future work: user notes, better gloss ranking, saved passages
+
+## Screenshots 
+
+![Reader screenshot](public/screenshots/reader.png)
+
+![Morphology panel](public/screenshots/morphology.png)
