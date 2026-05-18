@@ -2,6 +2,9 @@
 
 A full-stack reading tool that parses Ancient Greek passages into interlinear vocabulary and morphology.
 
+## Live Demo
+https://interlinear-ancient-greek.vercel.app/
+
 ## Features
 - Paste Ancient Greek passages
 - Preserves original line breaks
@@ -10,6 +13,7 @@ A full-stack reading tool that parses Ancient Greek passages into interlinear vo
 - Adds fallback handling for particles, elision, and Homeric forms
 - Click words to inspect lemma and morphology
 - Shows unresolved words for review
+
 
 ## Architecture
 Next.js frontend
