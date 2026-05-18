@@ -1,0 +1,5 @@
+services:
+  morph:
+    image: perseidsproject/morpheus-perseids-api:latest
+    ports:
+      - "1500:1500"
