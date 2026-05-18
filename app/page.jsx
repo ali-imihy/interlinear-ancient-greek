@@ -17,12 +17,23 @@ const SAMPLE_PASSAGES = [
     text: "Ἐν ἀρχῇ ἦν ὁ λόγος\nκαὶ ὁ λόγος ἦν πρὸς τὸν θεόν\nκαὶ θεὸς ἦν ὁ λόγος",
   },
   {
-    title: "Particle stress test",
-    text: "δέ γάρ μέν καί τε ἤ οὐ οὐκ οὐχ μή ἄν γε ἆρα",
-  },
-  {
-    title: "Mixed short test",
-    text: "καὶ ἄνθρωπος δέ θεὰ γάρ",
+    title: "Homer, Iliad 1.1-16",
+    text: `μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος
+οὐλομένην, ἣ μυρί’ Ἀχαιοῖς ἄλγε’ ἔθηκε,
+πολλὰς δ’ ἰφθίμους ψυχὰς Ἄϊδι προΐαψεν
+ἡρώων, αὐτοὺς δὲ ἑλώρια τεῦχε κύνεσσιν
+οἰωνοῖσί τε πᾶσι, Διὸς δ’ ἐτελείετο βουλή,
+ἐξ οὗ δὴ τὰ πρῶτα διαστήτην ἐρίσαντε
+Ἀτρεΐδης τε ἄναξ ἀνδρῶν καὶ δῖος Ἀχιλλεύς.
+τίς τ’ ἄρ σφωε θεῶν ἔριδι ξυνέηκε μάχεσθαι;
+Λητοῦς καὶ Διὸς υἱός· ὃ γὰρ βασιλῆϊ χολωθεὶς
+νοῦσον ἀνὰ στρατὸν ὄρσε κακήν, ὀλέκοντο δὲ λαοί,
+οὕνεκα τὸν Χρύσην ἠτίμασεν ἀρητῆρα
+Ἀτρεΐδης· ὃ γὰρ ἦλθε θοὰς ἐπὶ νῆας Ἀχαιῶν
+λυσόμενός τε θύγατρα φέρων τ’ ἀπερείσι’ ἄποινα,
+στέμματ’ ἔχων ἐν χερσὶν ἑκηβόλου Ἀπόλλωνος
+χρυσέῳ ἀνὰ σκήπτρῳ, καὶ λίσσετο πάντας Ἀχαιούς,
+Ἀτρεΐδα δὲ μάλιστα δύω, κοσμήτορε λαῶν·`
   },
 ];
 
@@ -362,7 +373,7 @@ export default function AncientGreekInterlinearParserDemo() {
             </div>
 
             <p className="mb-3 text-amber-800">
-              These words either failed to parse or parsed without a useful gloss. Add overrides or elision fallbacks for recurring words.
+              These words either failed to parse or parsed without a useful gloss.
             </p>
 
             <div className="flex flex-wrap gap-2">
