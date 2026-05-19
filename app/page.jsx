@@ -109,6 +109,8 @@ export default function AncientGreekInterlinearParserDemo() {
 
   const [savedPassages, setSavedPassages] = useState([]);
   const [isLoadingPassages, setIsLoadingPassages] = useState(false);
+  
+  const [currentPassageId, setCurrentPassageId] = useState(null);
 
   const flatTokens = lines.flat();
   const parsedTokens = flatTokens.filter((token) => token.lemma).length;
@@ -123,8 +125,46 @@ export default function AncientGreekInterlinearParserDemo() {
   };
 
   const loadSamplePassage = (sampleText) => {
+    setCurrentPassageId(null);
     setText(sampleText);
+    setPassageTitle("");
     clearParsedOutput();
+  };
+
+  const updatePassage = async () => {
+    if (!currentPassageId) return;
+  
+    setIsSaving(true);
+    setSaveMessage(null);
+  
+    try {
+      const response = await fetch(`/api/passages/${currentPassageId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: passageTitle.trim() || "Untitled Passage",
+          originalText: text,
+          parsedJson: {
+            lines,
+          },
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Update failed");
+      }
+  
+      const data = await response.json();
+  
+      setSaveMessage(`Updated: ${data.passage.title}`);
+      loadSavedPassages();
+    } catch (error) {
+      setSaveMessage("Could not update passage.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const deletePassage = async (id) => {
@@ -221,7 +261,9 @@ export default function AncientGreekInterlinearParserDemo() {
   
       const data = await response.json();
   
+      setCurrentPassageId(data.passage.id);
       setSaveMessage(`Saved: ${data.passage.title}`);
+      loadSavedPassages();
     } catch (error) {
       setSaveMessage("Could not save passage.");
     } finally {
@@ -303,6 +345,17 @@ export default function AncientGreekInterlinearParserDemo() {
               {isSaving ? "Saving..." : "Save Passage"}
             </Button>
 
+            {currentPassageId && (
+              <Button
+                onClick={updatePassage}
+                disabled={isSaving || lines.flat().length === 0}
+                variant="outline"
+                className="h-8 rounded-sm px-3"
+              >
+                {isSaving ? "Updating..." : "Update Passage"}
+              </Button>
+            )}
+
             {saveMessage && (
               <span className="text-stone-600">{saveMessage}</span>
             )}
@@ -321,6 +374,18 @@ export default function AncientGreekInterlinearParserDemo() {
               className="underline-offset-2 hover:underline"
             >
               reset sample
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentPassageId(null);
+                setText("");
+                setPassageTitle("");
+                clearParsedOutput();
+              }}
+            >
+              clear
             </button>
 
             {totalWords > 0 && (
@@ -343,6 +408,7 @@ export default function AncientGreekInterlinearParserDemo() {
                   key={passage.id}
                   type="button"
                   onClick={() => {
+                    setCurrentPassageId(passage.id);
                     setText(passage.originalText);
                     setPassageTitle(passage.title);
                     setSelectedToken(null);
