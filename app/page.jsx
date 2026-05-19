@@ -101,6 +101,10 @@ export default function AncientGreekInterlinearParserDemo() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [passageTitle, setPassageTitle] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null);
+
   const flatTokens = lines.flat();
   const parsedTokens = flatTokens.filter((token) => token.lemma).length;
   const totalWords = flatTokens.length;
@@ -110,6 +114,7 @@ export default function AncientGreekInterlinearParserDemo() {
     setLines([]);
     setSelectedToken(null);
     setError(null);
+    setSaveMessage(null);
   };
 
   const loadSamplePassage = (sampleText) => {
@@ -144,6 +149,41 @@ export default function AncientGreekInterlinearParserDemo() {
       setError("Could not parse the text. Make sure Morpheus/Docker is running.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const savePassage = async () => {
+    if (!text.trim()) return;
+  
+    setIsSaving(true);
+    setSaveMessage(null);
+  
+    try {
+      const response = await fetch("/api/passages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: passageTitle.trim() || "Untitled Passage",
+          originalText: text,
+          parsedJson: {
+            lines,
+          },
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Save failed");
+      }
+  
+      const data = await response.json();
+  
+      setSaveMessage(`Saved: ${data.passage.title}`);
+    } catch (error) {
+      setSaveMessage("Could not save passage.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -204,6 +244,26 @@ export default function AncientGreekInterlinearParserDemo() {
             >
               {isLoading ? "Parsing..." : "Parse Greek"}
             </Button>
+
+            <input
+              value={passageTitle}
+              onChange={(event) => setPassageTitle(event.target.value)}
+              placeholder="Passage title"
+              className="h-8 w-48 rounded-sm border border-stone-300 bg-white px-2 text-sm outline-none focus:border-stone-500"
+            />
+
+            <Button
+              onClick={savePassage}
+              disabled={isSaving || lines.flat().length === 0}
+              variant="outline"
+              className="h-8 rounded-sm px-3"
+            >
+              {isSaving ? "Saving..." : "Save Passage"}
+            </Button>
+
+            {saveMessage && (
+              <span className="text-stone-600">{saveMessage}</span>
+            )}
 
             <button
               type="button"
