@@ -94,6 +94,8 @@ function isUnresolvedToken(token) {
   );
 }
 
+
+
 export default function AncientGreekInterlinearParserDemo() {
   const [text, setText] = useState(SAMPLE_TEXT);
   const [lines, setLines] = useState([]);
@@ -104,6 +106,9 @@ export default function AncientGreekInterlinearParserDemo() {
   const [passageTitle, setPassageTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
+
+  const [savedPassages, setSavedPassages] = useState([]);
+  const [isLoadingPassages, setIsLoadingPassages] = useState(false);
 
   const flatTokens = lines.flat();
   const parsedTokens = flatTokens.filter((token) => token.lemma).length;
@@ -120,6 +125,25 @@ export default function AncientGreekInterlinearParserDemo() {
   const loadSamplePassage = (sampleText) => {
     setText(sampleText);
     clearParsedOutput();
+  };
+
+  const loadSavedPassages = async () => {
+    setIsLoadingPassages(true);
+  
+    try {
+      const response = await fetch("/api/passages");
+  
+      if (!response.ok) {
+        throw new Error("Failed to load passages");
+      }
+  
+      const data = await response.json();
+      setSavedPassages(data.passages ?? []);
+    } catch (error) {
+      setError("Could not load saved passages.");
+    } finally {
+      setIsLoadingPassages(false);
+    }
   };
 
   const parseWithApi = async () => {
@@ -265,6 +289,14 @@ export default function AncientGreekInterlinearParserDemo() {
               <span className="text-stone-600">{saveMessage}</span>
             )}
 
+            <Button
+              onClick={loadSavedPassages}
+              variant="outline"
+              className="h-8 rounded-sm px-3"
+            >
+              {isLoadingPassages ? "Loading..." : "Load Saved"}
+            </Button>
+
             <button
               type="button"
               onClick={() => loadSamplePassage(SAMPLE_TEXT)}
@@ -282,6 +314,32 @@ export default function AncientGreekInterlinearParserDemo() {
             {error && <span className="text-red-700">{error}</span>}
           </div>
         </section>
+
+        {savedPassages.length > 0 && (
+          <section className="mb-5 rounded-sm border border-stone-300 bg-white p-4 text-sm shadow-sm">
+            <h2 className="mb-3 font-semibold text-stone-800">Saved Passages</h2>
+
+            <div className="space-y-2">
+              {savedPassages.map((passage) => (
+                <button
+                  key={passage.id}
+                  type="button"
+                  onClick={() => {
+                    setText(passage.originalText);
+                    setPassageTitle(passage.title);
+                    clearParsedOutput();
+                  }}
+                  className="block w-full rounded-sm border border-stone-200 px-3 py-2 text-left hover:border-stone-500"
+                >
+                  <div className="font-medium text-stone-900">{passage.title}</div>
+                  <div className="truncate text-xs text-stone-500">
+                    {passage.originalText}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="rounded-sm border border-stone-300 bg-white px-5 py-6 shadow-sm">
           {isLoading ? (
