@@ -127,6 +127,24 @@ export default function AncientGreekInterlinearParserDemo() {
     clearParsedOutput();
   };
 
+  const deletePassage = async (id) => {
+    try {
+      const response = await fetch(`/api/passages/${id}`, {
+        method: "DELETE",
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to delete passage");
+      }
+  
+      setSavedPassages((passages) =>
+        passages.filter((passage) => passage.id !== id)
+      );
+    } catch (error) {
+      setError("Could not delete saved passage.");
+    }
+  };
+
   const loadSavedPassages = async () => {
     setIsLoadingPassages(true);
   
@@ -327,7 +345,15 @@ export default function AncientGreekInterlinearParserDemo() {
                   onClick={() => {
                     setText(passage.originalText);
                     setPassageTitle(passage.title);
-                    clearParsedOutput();
+                    setSelectedToken(null);
+                    setError(null);
+                    setSaveMessage(null);
+                  
+                    if (passage.parsedJson?.lines) {
+                      setLines(passage.parsedJson.lines);
+                    } else {
+                      setLines([]);
+                    }
                   }}
                   className="block w-full rounded-sm border border-stone-200 px-3 py-2 text-left hover:border-stone-500"
                 >
@@ -335,6 +361,16 @@ export default function AncientGreekInterlinearParserDemo() {
                   <div className="truncate text-xs text-stone-500">
                     {passage.originalText}
                   </div>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deletePassage(passage.id);
+                    }}
+                    className="text-xs text-red-700 underline-offset-2 hover:underline"
+                  >
+                    delete
+                  </button>
                 </button>
               ))}
             </div>

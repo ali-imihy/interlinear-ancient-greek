@@ -10,6 +10,7 @@ export async function GET() {
         id: true,
         title: true,
         originalText: true,
+        parsedJson: true,
         createdAt: true,
         updatedAt: true,
       },
