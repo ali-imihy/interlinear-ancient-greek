@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import AuthButtons from "@/components/auth-buttons";
 
 const SAMPLE_TEXT = "μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος";
 
@@ -279,12 +280,19 @@ export default function AncientGreekInterlinearParserDemo() {
   return (
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-6 text-stone-900">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-5 border-b border-stone-300 pb-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Ancient Greek Interlinear</h1>
-          <p className="mt-1 text-sm text-stone-600">
-            Paste Greek, parse morphology, and inspect possible lemmas inline.
-          </p>
-        </header>
+      <header className="mb-5 border-b border-stone-300 pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Ancient Greek Interlinear
+            </h1>
+            <p className="mt-1 text-sm text-stone-600">
+              Paste Greek, parse morphology, and inspect possible lemmas inline.
+            </p>
+          </div>
+          <AuthButtons />
+        </div>
+      </header>
 
         <section className="mb-5 space-y-3">
           <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
