@@ -16,6 +16,7 @@ model User {
   accounts Account[]
   sessions Session[]
   passages Passage[]
+  wordNotes WordNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -71,4 +72,18 @@ model Passage {
   updatedAt    DateTime @updatedAt
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WordNote {
+  id        String   @id @default(cuid())
+  userId    String
+  lemma     String
+  surface   String?
+  note      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lemma])
 }

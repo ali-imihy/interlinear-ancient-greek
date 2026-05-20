@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import AuthButtons from "@/components/auth-buttons";
+import { useSession } from "next-auth/react";
 
 const SAMPLE_TEXT = "μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος";
 
@@ -113,6 +114,13 @@ export default function AncientGreekInterlinearParserDemo() {
   
   const [currentPassageId, setCurrentPassageId] = useState(null);
 
+  const { data: session } = useSession();
+
+  const [noteText, setNoteText] = useState("");
+  const [isLoadingNote, setIsLoadingNote] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [noteMessage, setNoteMessage] = useState(null);
+
   const flatTokens = lines.flat();
   const parsedTokens = flatTokens.filter((token) => token.lemma).length;
   const totalWords = flatTokens.length;
@@ -183,6 +191,77 @@ export default function AncientGreekInterlinearParserDemo() {
       );
     } catch (error) {
       setError("Could not delete saved passage.");
+    }
+  };
+
+  const loadWordNote = async (lemma) => {
+    if (!lemma) return;
+  
+    setIsLoadingNote(true);
+    setNoteMessage(null);
+    setNoteText("");
+  
+    try {
+      const response = await fetch(
+        `/api/word-notes?lemma=${encodeURIComponent(lemma)}`
+      );
+  
+      if (response.status === 401) {
+        setNoteMessage("Sign in to load and save personal notes.");
+        return;
+      }
+  
+      if (!response.ok) {
+        throw new Error("Failed to load note");
+      }
+  
+      const data = await response.json();
+      setNoteText(data.wordNote?.note ?? "");
+    } catch (error) {
+      setNoteMessage("Could not load note.");
+    } finally {
+      setIsLoadingNote(false);
+    }
+  };
+
+  const saveWordNote = async () => {
+    if (!selectedToken?.lemma) return;
+  
+    if (!noteText.trim()) {
+      setNoteMessage("Write a note before saving.");
+      return;
+    }
+  
+    setIsSavingNote(true);
+    setNoteMessage(null);
+  
+    try {
+      const response = await fetch("/api/word-notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lemma: selectedToken.lemma,
+          surface: selectedToken.surface,
+          note: noteText,
+        }),
+      });
+  
+      if (response.status === 401) {
+        setNoteMessage("Sign in to save personal notes.");
+        return;
+      }
+  
+      if (!response.ok) {
+        throw new Error("Failed to save note");
+      }
+  
+      setNoteMessage("Note saved.");
+    } catch (error) {
+      setNoteMessage("Could not save note.");
+    } finally {
+      setIsSavingNote(false);
     }
   };
 
@@ -274,7 +353,12 @@ export default function AncientGreekInterlinearParserDemo() {
 
   const handleTokenClick = (token) => {
     if (!token.lemma) return;
+  
     setSelectedToken(token);
+    setNoteText("");
+    setNoteMessage(null);
+  
+    loadWordNote(token.lemma);
   };
 
   return (
@@ -587,6 +671,47 @@ export default function AncientGreekInterlinearParserDemo() {
                   </div>
                 ) : (
                   <p className="text-stone-500">No parse details available for this word.</p>
+                )}
+              </div>
+              <div className="border-t border-stone-200 pt-4">
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Personal note
+                </h2>
+
+                {!session?.user ? (
+                  <p className="text-stone-500">
+                    Sign in with GitHub to save personal notes for this lemma.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={noteText}
+                      onChange={(event) => setNoteText(event.target.value)}
+                      disabled={isLoadingNote || isSavingNote}
+                      placeholder={`Add a note for ${selectedToken.lemma}...`}
+                      className="min-h-24 resize-y rounded-sm border-stone-300 bg-white text-sm shadow-none focus-visible:ring-stone-400"
+                    />
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        type="button"
+                        onClick={saveWordNote}
+                        disabled={isLoadingNote || isSavingNote || !selectedToken?.lemma}
+                        variant="outline"
+                        className="h-8 rounded-sm px-3"
+                      >
+                        {isSavingNote ? "Saving..." : "Save Note"}
+                      </Button>
+
+                      {isLoadingNote && (
+                        <span className="text-sm text-stone-500">Loading note...</span>
+                      )}
+
+                      {noteMessage && (
+                        <span className="text-sm text-stone-600">{noteMessage}</span>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
