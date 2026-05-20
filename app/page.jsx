@@ -404,40 +404,42 @@ export default function AncientGreekInterlinearParserDemo() {
 
             <div className="space-y-2">
               {savedPassages.map((passage) => (
-                <button
+                <div
                   key={passage.id}
-                  type="button"
-                  onClick={() => {
-                    setCurrentPassageId(passage.id);
-                    setText(passage.originalText);
-                    setPassageTitle(passage.title);
-                    setSelectedToken(null);
-                    setError(null);
-                    setSaveMessage(null);
-                  
-                    if (passage.parsedJson?.lines) {
-                      setLines(passage.parsedJson.lines);
-                    } else {
-                      setLines([]);
-                    }
-                  }}
-                  className="block w-full rounded-sm border border-stone-200 px-3 py-2 text-left hover:border-stone-500"
+                  className="flex items-start justify-between gap-3 rounded-sm border border-stone-200 px-3 py-2 hover:border-stone-500"
                 >
-                  <div className="font-medium text-stone-900">{passage.title}</div>
-                  <div className="truncate text-xs text-stone-500">
-                    {passage.originalText}
-                  </div>
                   <button
                     type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      deletePassage(passage.id);
+                    onClick={() => {
+                      setCurrentPassageId(passage.id);
+                      setText(passage.originalText);
+                      setPassageTitle(passage.title);
+                      setSelectedToken(null);
+                      setError(null);
+                      setSaveMessage(null);
+
+                      if (passage.parsedJson?.lines) {
+                        setLines(passage.parsedJson.lines);
+                      } else {
+                        setLines([]);
+                      }
                     }}
-                    className="text-xs text-red-700 underline-offset-2 hover:underline"
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <div className="font-medium text-stone-900">{passage.title}</div>
+                    <div className="truncate text-xs text-stone-500">
+                      {passage.originalText}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => deletePassage(passage.id)}
+                    className="shrink-0 text-xs text-red-700 underline-offset-2 hover:underline"
                   >
                     delete
                   </button>
-                </button>
+                </div>
               ))}
             </div>
           </section>
