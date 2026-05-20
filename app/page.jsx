@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import AuthButtons from "@/components/auth-buttons";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 const SAMPLE_TEXT = "μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος";
 
@@ -374,7 +375,16 @@ export default function AncientGreekInterlinearParserDemo() {
               Paste Greek, parse morphology, and inspect possible lemmas inline.
             </p>
           </div>
-          <AuthButtons />
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/review"
+              className="rounded-sm border border-stone-300 bg-white px-3 py-1 text-sm hover:border-stone-600"
+            >
+              Review Notes
+            </Link>
+
+            <AuthButtons />
+          </div>
         </div>
       </header>
 
