@@ -44,3 +44,11 @@ Live Site: **https://interlinear-ancient-greek.vercel.app/**
 - Fly.io for the Dockerized Morpheus API
 - Neon for hosted PostgreSQL
 
+## Screenshots
+
+![Reader view](public/screenshots/reader.png)
+
+![Word analysis panel](public/screenshots/word-analysis.png)
+
+![Review notes page](public/screenshots/notes.png)
+
