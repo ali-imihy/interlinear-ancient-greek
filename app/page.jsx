@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import AuthButtons from "@/components/auth-buttons";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 const SAMPLE_TEXT = "μῆνιν ἄειδε θεὰ Πηληϊάδεω Ἀχιλῆος";
 
@@ -94,12 +97,32 @@ function isUnresolvedToken(token) {
   );
 }
 
+
+
 export default function AncientGreekInterlinearParserDemo() {
   const [text, setText] = useState(SAMPLE_TEXT);
   const [lines, setLines] = useState([]);
   const [selectedToken, setSelectedToken] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const [passageTitle, setPassageTitle] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null);
+
+  const [savedPassages, setSavedPassages] = useState([]);
+  const [isLoadingPassages, setIsLoadingPassages] = useState(false);
+  
+  const [currentPassageId, setCurrentPassageId] = useState(null);
+
+  const { data: session } = useSession();
+
+  const [noteText, setNoteText] = useState("");
+  const [isLoadingNote, setIsLoadingNote] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [noteMessage, setNoteMessage] = useState(null);
+
+  const [notedLemmas, setNotedLemmas] = useState(new Set());
 
   const flatTokens = lines.flat();
   const parsedTokens = flatTokens.filter((token) => token.lemma).length;
@@ -110,11 +133,188 @@ export default function AncientGreekInterlinearParserDemo() {
     setLines([]);
     setSelectedToken(null);
     setError(null);
+    setSaveMessage(null);
   };
 
   const loadSamplePassage = (sampleText) => {
+    setCurrentPassageId(null);
     setText(sampleText);
+    setPassageTitle("");
     clearParsedOutput();
+  };
+
+  const loadNotedLemmas = async () => {
+    if (!session?.user) {
+      setNotedLemmas(new Set());
+      return;
+    }
+  
+    try {
+      const response = await fetch("/api/word-notes");
+  
+      if (!response.ok) {
+        return;
+      }
+  
+      const data = await response.json();
+  
+      const lemmas = new Set(
+        (data.wordNotes ?? []).map((wordNote) => wordNote.lemma)
+      );
+  
+      setNotedLemmas(lemmas);
+    } catch (error) {
+      console.error("Could not load noted lemmas:", error);
+    }
+  };
+
+  const updatePassage = async () => {
+    if (!currentPassageId) return;
+  
+    setIsSaving(true);
+    setSaveMessage(null);
+  
+    try {
+      const response = await fetch(`/api/passages/${currentPassageId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: passageTitle.trim() || "Untitled Passage",
+          originalText: text,
+          parsedJson: {
+            lines,
+          },
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Update failed");
+      }
+  
+      const data = await response.json();
+  
+      setSaveMessage(`Updated: ${data.passage.title}`);
+      loadSavedPassages();
+    } catch (error) {
+      setSaveMessage("Could not update passage.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deletePassage = async (id) => {
+    try {
+      const response = await fetch(`/api/passages/${id}`, {
+        method: "DELETE",
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to delete passage");
+      }
+  
+      setSavedPassages((passages) =>
+        passages.filter((passage) => passage.id !== id)
+      );
+    } catch (error) {
+      setError("Could not delete saved passage.");
+    }
+  };
+
+  const loadWordNote = async (lemma) => {
+    if (!lemma) return;
+  
+    setIsLoadingNote(true);
+    setNoteMessage(null);
+    setNoteText("");
+  
+    try {
+      const response = await fetch(
+        `/api/word-notes?lemma=${encodeURIComponent(lemma)}`
+      );
+  
+      if (response.status === 401) {
+        setNoteMessage("Sign in to load and save personal notes.");
+        return;
+      }
+  
+      if (!response.ok) {
+        throw new Error("Failed to load note");
+      }
+  
+      const data = await response.json();
+      setNoteText(data.wordNote?.note ?? "");
+    } catch (error) {
+      setNoteMessage("Could not load note.");
+    } finally {
+      setIsLoadingNote(false);
+    }
+  };
+
+  const saveWordNote = async () => {
+    if (!selectedToken?.lemma) return;
+  
+    if (!noteText.trim()) {
+      setNoteMessage("Write a note before saving.");
+      return;
+    }
+  
+    setIsSavingNote(true);
+    setNoteMessage(null);
+  
+    try {
+      const response = await fetch("/api/word-notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lemma: selectedToken.lemma,
+          surface: selectedToken.surface,
+          note: noteText,
+        }),
+      });
+  
+      if (response.status === 401) {
+        setNoteMessage("Sign in to save personal notes.");
+        return;
+      }
+  
+      if (!response.ok) {
+        throw new Error("Failed to save note");
+      }
+  
+      setNoteMessage("Note saved.");
+      setNotedLemmas((previousLemmas) => {
+        const nextLemmas = new Set(previousLemmas);
+        nextLemmas.add(selectedToken.lemma);
+        return nextLemmas;
+      });
+    } catch (error) {
+      setNoteMessage("Could not save note.");
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const loadSavedPassages = async () => {
+    setIsLoadingPassages(true);
+  
+    try {
+      const response = await fetch("/api/passages");
+  
+      if (!response.ok) {
+        throw new Error("Failed to load passages");
+      }
+  
+      const data = await response.json();
+      setSavedPassages(data.passages ?? []);
+    } catch (error) {
+      setError("Could not load saved passages.");
+    } finally {
+      setIsLoadingPassages(false);
+    }
   };
 
   const parseWithApi = async () => {
@@ -147,20 +347,83 @@ export default function AncientGreekInterlinearParserDemo() {
     }
   };
 
-  const handleTokenClick = (token) => {
-    if (!token.lemma) return;
-    setSelectedToken(token);
+  const savePassage = async () => {
+    if (!text.trim()) return;
+  
+    setIsSaving(true);
+    setSaveMessage(null);
+  
+    try {
+      const response = await fetch("/api/passages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: passageTitle.trim() || "Untitled Passage",
+          originalText: text,
+          parsedJson: {
+            lines,
+          },
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Save failed");
+      }
+  
+      const data = await response.json();
+  
+      setCurrentPassageId(data.passage.id);
+      setSaveMessage(`Saved: ${data.passage.title}`);
+      loadSavedPassages();
+    } catch (error) {
+      setSaveMessage("Could not save passage.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
+  const handleTokenClick = (token) => {
+    if (!token.lemma) return;
+  
+    setSelectedToken(token);
+    setNoteText("");
+    setNoteMessage(null);
+  
+    loadWordNote(token.lemma);
+  };
+
+  useEffect(() => {
+    loadNotedLemmas();
+  }, [session?.user?.email]);
+
   return (
+    
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-6 text-stone-900">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-5 border-b border-stone-300 pb-4">
-          <h1 className="text-2xl font-semibold tracking-tight">Ancient Greek Interlinear</h1>
-          <p className="mt-1 text-sm text-stone-600">
-            Paste Greek, parse morphology, and inspect possible lemmas inline.
-          </p>
-        </header>
+      <header className="mb-5 border-b border-stone-300 pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Ancient Greek Interlinear
+            </h1>
+            <p className="mt-1 text-sm text-stone-600">
+              Paste Greek, parse morphology, and inspect possible lemmas inline.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/review"
+              className="rounded-sm border border-stone-300 bg-white px-3 py-1 text-sm hover:border-stone-600"
+            >
+              Review Notes
+            </Link>
+
+            <AuthButtons />
+          </div>
+        </div>
+      </header>
 
         <section className="mb-5 space-y-3">
           <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
@@ -205,12 +468,63 @@ export default function AncientGreekInterlinearParserDemo() {
               {isLoading ? "Parsing..." : "Parse Greek"}
             </Button>
 
+            <input
+              value={passageTitle}
+              onChange={(event) => setPassageTitle(event.target.value)}
+              placeholder="Passage title"
+              className="h-8 w-48 rounded-sm border border-stone-300 bg-white px-2 text-sm outline-none focus:border-stone-500"
+            />
+
+            <Button
+              onClick={savePassage}
+              disabled={isSaving || lines.flat().length === 0}
+              variant="outline"
+              className="h-8 rounded-sm px-3"
+            >
+              {isSaving ? "Saving..." : "Save Passage"}
+            </Button>
+
+            {currentPassageId && (
+              <Button
+                onClick={updatePassage}
+                disabled={isSaving || lines.flat().length === 0}
+                variant="outline"
+                className="h-8 rounded-sm px-3"
+              >
+                {isSaving ? "Updating..." : "Update Passage"}
+              </Button>
+            )}
+
+            {saveMessage && (
+              <span className="text-stone-600">{saveMessage}</span>
+            )}
+
+            <Button
+              onClick={loadSavedPassages}
+              variant="outline"
+              className="h-8 rounded-sm px-3"
+            >
+              {isLoadingPassages ? "Loading..." : "Load Saved"}
+            </Button>
+
             <button
               type="button"
               onClick={() => loadSamplePassage(SAMPLE_TEXT)}
               className="underline-offset-2 hover:underline"
             >
               reset sample
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentPassageId(null);
+                setText("");
+                setPassageTitle("");
+                clearParsedOutput();
+              }}
+            >
+              clear
             </button>
 
             {totalWords > 0 && (
@@ -222,6 +536,53 @@ export default function AncientGreekInterlinearParserDemo() {
             {error && <span className="text-red-700">{error}</span>}
           </div>
         </section>
+
+        {savedPassages.length > 0 && (
+          <section className="mb-5 rounded-sm border border-stone-300 bg-white p-4 text-sm shadow-sm">
+            <h2 className="mb-3 font-semibold text-stone-800">Saved Passages</h2>
+
+            <div className="space-y-2">
+              {savedPassages.map((passage) => (
+                <div
+                  key={passage.id}
+                  className="flex items-start justify-between gap-3 rounded-sm border border-stone-200 px-3 py-2 hover:border-stone-500"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentPassageId(passage.id);
+                      setText(passage.originalText);
+                      setPassageTitle(passage.title);
+                      setSelectedToken(null);
+                      setError(null);
+                      setSaveMessage(null);
+
+                      if (passage.parsedJson?.lines) {
+                        setLines(passage.parsedJson.lines);
+                      } else {
+                        setLines([]);
+                      }
+                    }}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <div className="font-medium text-stone-900">{passage.title}</div>
+                    <div className="truncate text-xs text-stone-500">
+                      {passage.originalText}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => deletePassage(passage.id)}
+                    className="shrink-0 text-xs text-red-700 underline-offset-2 hover:underline"
+                  >
+                    delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="rounded-sm border border-stone-300 bg-white px-5 py-6 shadow-sm">
           {isLoading ? (
@@ -243,6 +604,7 @@ export default function AncientGreekInterlinearParserDemo() {
                         selectedToken?.surface === token.surface &&
                         selectedToken?.lemma === token.lemma;
                       const hasMultipleParses = token.parses?.length > 1;
+                      const hasSavedNote = token.lemma && notedLemmas.has(token.lemma);
 
                       return (
                         <button
@@ -264,6 +626,13 @@ export default function AncientGreekInterlinearParserDemo() {
                           >
                             {token.surface}
                           </span>
+
+                          {hasSavedNote && (
+                            <span
+                              className="absolute -right-0.5 -top-1 h-2 w-2 rounded-full bg-amber-500"
+                              title="You have a note for this lemma"
+                            />
+                          )}
 
                           <span className="mt-1 max-w-[8rem] truncate text-center font-sans text-[0.72rem] leading-tight text-stone-600">
                             {hasEntry ? getShortGloss(token.shortDef || token.lemma) : "not found"}
@@ -297,6 +666,11 @@ export default function AncientGreekInterlinearParserDemo() {
                   <span className="rounded-sm bg-stone-100 px-2 py-1 text-xs uppercase tracking-wide text-stone-500">
                     selected word
                   </span>
+                  {notedLemmas.has(selectedToken.lemma) && (
+                    <span className="rounded-sm bg-amber-100 px-2 py-1 text-xs uppercase tracking-wide text-amber-800">
+                      saved note
+                    </span>
+                  )}
                 </div>
 
                 <dl className="grid gap-2 text-sm sm:grid-cols-[5rem_1fr]">
@@ -357,6 +731,47 @@ export default function AncientGreekInterlinearParserDemo() {
                   </div>
                 ) : (
                   <p className="text-stone-500">No parse details available for this word.</p>
+                )}
+              </div>
+              <div className="border-t border-stone-200 pt-4">
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Personal note
+                </h2>
+
+                {!session?.user ? (
+                  <p className="text-stone-500">
+                    Sign in with GitHub to save personal notes for this lemma.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={noteText}
+                      onChange={(event) => setNoteText(event.target.value)}
+                      disabled={isLoadingNote || isSavingNote}
+                      placeholder={`Add a note for ${selectedToken.lemma}...`}
+                      className="min-h-24 resize-y rounded-sm border-stone-300 bg-white text-sm shadow-none focus-visible:ring-stone-400"
+                    />
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        type="button"
+                        onClick={saveWordNote}
+                        disabled={isLoadingNote || isSavingNote || !selectedToken?.lemma}
+                        variant="outline"
+                        className="h-8 rounded-sm px-3"
+                      >
+                        {isSavingNote ? "Saving..." : "Save Note"}
+                      </Button>
+
+                      {isLoadingNote && (
+                        <span className="text-sm text-stone-500">Loading note...</span>
+                      )}
+
+                      {noteMessage && (
+                        <span className="text-sm text-stone-600">{noteMessage}</span>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
