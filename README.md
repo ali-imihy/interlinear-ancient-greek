@@ -1,34 +1,46 @@
 # Ancient Greek Interlinear Reader
 
-A full-stack reading tool that parses Ancient Greek passages into interlinear vocabulary and morphology.
+A full-stack Ancient Greek study platform that converts pasted Greek passages into interlinear vocabulary, lemmas, morphology, and clickable word-level analysis.
+
+Originally inspired by NoDictionaries, but focused on Ancient Greek. Users are able to paste passages, parse them into word-level vocabulary, inspect possible morphological analyses, save passages, and create personal lemma-level notes for review.
 
 ## Live Demo
-https://interlinear-ancient-greek.vercel.app/
+
+Live Site: **https://interlinear-ancient-greek.vercel.app/**
 
 ## Features
-- Paste Ancient Greek passages
-- Preserves original line breaks
-- Uses Morpheus for morphological parsing
-- Uses LSJ-based dictionary data for glosses
-- Adds fallback handling for particles, elision, and Homeric forms
-- Click words to inspect lemma and morphology
-- Shows unresolved words for review
+
+- Parse Ancient Greek word forms using a Dockerized Morpheus morphology API
+- Click individual words to inspect lemma, gloss, part of speech, and morphology
+- Look up definitions using LSJ-based lexical data
+- Improve coverage with Greek normalization, particle handling, elision fallbacks, and curated Homeric gloss overrides
+- Sign in with GitHub authentication
+- Save, load, update, and delete personal passages
+- Save personal notes by lemma, so notes apply across different inflected forms
+- Review and edit saved vocabulary notes on a dedicated review page
+- Display note indicators on words that already have saved notes
+
+## Tech Stack
+
+**Frontend**
+- Next.js
+- React
+- Tailwind CSS
+
+**Backend**
+- Next.js API routes
+- Prisma ORM
+- Neon PostgreSQL
+- Auth.js / NextAuth
 
 
-## Architecture
-Next.js frontend
-→ Next.js API route
-→ Dockerized Morpheus API on Fly.io
-→ LSJ dictionary lookup + gloss overrides
-→ Interlinear reader UI
+**Language Processing**
+- Morpheus / Perseids morphology API
+- LSJ-based Greek-English dictionary data
+- Custom Greek normalization and fallback handling
 
-## Limitations
-- Some LSJ glosses are noisy or poorly ranked
-- Homeric forms sometimes require curated overrides
-- Future work: user notes, better gloss ranking, saved passages
+**Deployment**
+- Vercel for the Next.js application
+- Fly.io for the Dockerized Morpheus API
+- Neon for hosted PostgreSQL
 
-## Screenshots 
-
-![Reader screenshot](public/screenshots/reader.png)
-
-![Morphology panel](public/screenshots/morphology.png)
