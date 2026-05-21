@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +122,8 @@ export default function AncientGreekInterlinearParserDemo() {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [noteMessage, setNoteMessage] = useState(null);
 
+  const [notedLemmas, setNotedLemmas] = useState(new Set());
+
   const flatTokens = lines.flat();
   const parsedTokens = flatTokens.filter((token) => token.lemma).length;
   const totalWords = flatTokens.length;
@@ -139,6 +141,31 @@ export default function AncientGreekInterlinearParserDemo() {
     setText(sampleText);
     setPassageTitle("");
     clearParsedOutput();
+  };
+
+  const loadNotedLemmas = async () => {
+    if (!session?.user) {
+      setNotedLemmas(new Set());
+      return;
+    }
+  
+    try {
+      const response = await fetch("/api/word-notes");
+  
+      if (!response.ok) {
+        return;
+      }
+  
+      const data = await response.json();
+  
+      const lemmas = new Set(
+        (data.wordNotes ?? []).map((wordNote) => wordNote.lemma)
+      );
+  
+      setNotedLemmas(lemmas);
+    } catch (error) {
+      console.error("Could not load noted lemmas:", error);
+    }
   };
 
   const updatePassage = async () => {
@@ -259,6 +286,11 @@ export default function AncientGreekInterlinearParserDemo() {
       }
   
       setNoteMessage("Note saved.");
+      setNotedLemmas((previousLemmas) => {
+        const nextLemmas = new Set(previousLemmas);
+        nextLemmas.add(selectedToken.lemma);
+        return nextLemmas;
+      });
     } catch (error) {
       setNoteMessage("Could not save note.");
     } finally {
@@ -362,7 +394,12 @@ export default function AncientGreekInterlinearParserDemo() {
     loadWordNote(token.lemma);
   };
 
+  useEffect(() => {
+    loadNotedLemmas();
+  }, [session?.user?.email]);
+
   return (
+    
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-6 text-stone-900">
       <div className="mx-auto max-w-5xl">
       <header className="mb-5 border-b border-stone-300 pb-4">
@@ -567,6 +604,7 @@ export default function AncientGreekInterlinearParserDemo() {
                         selectedToken?.surface === token.surface &&
                         selectedToken?.lemma === token.lemma;
                       const hasMultipleParses = token.parses?.length > 1;
+                      const hasSavedNote = token.lemma && notedLemmas.has(token.lemma);
 
                       return (
                         <button
@@ -588,6 +626,13 @@ export default function AncientGreekInterlinearParserDemo() {
                           >
                             {token.surface}
                           </span>
+
+                          {hasSavedNote && (
+                            <span
+                              className="absolute -right-0.5 -top-1 h-2 w-2 rounded-full bg-amber-500"
+                              title="You have a note for this lemma"
+                            />
+                          )}
 
                           <span className="mt-1 max-w-[8rem] truncate text-center font-sans text-[0.72rem] leading-tight text-stone-600">
                             {hasEntry ? getShortGloss(token.shortDef || token.lemma) : "not found"}
@@ -621,6 +666,11 @@ export default function AncientGreekInterlinearParserDemo() {
                   <span className="rounded-sm bg-stone-100 px-2 py-1 text-xs uppercase tracking-wide text-stone-500">
                     selected word
                   </span>
+                  {notedLemmas.has(selectedToken.lemma) && (
+                    <span className="rounded-sm bg-amber-100 px-2 py-1 text-xs uppercase tracking-wide text-amber-800">
+                      saved note
+                    </span>
+                  )}
                 </div>
 
                 <dl className="grid gap-2 text-sm sm:grid-cols-[5rem_1fr]">

@@ -13,6 +13,11 @@ export default function ReviewNotesPage() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
 
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [draftNote, setDraftNote] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editMessage, setEditMessage] = useState(null);
+
   const loadWordNotes = async () => {
     setIsLoading(true);
     setError(null);
@@ -35,6 +40,62 @@ export default function ReviewNotesPage() {
       setError("Could not load word notes.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const startEditingNote = (wordNote) => {
+    setEditingNoteId(wordNote.id);
+    setDraftNote(wordNote.note);
+    setEditMessage(null);
+  };
+  
+  const cancelEditingNote = () => {
+    setEditingNoteId(null);
+    setDraftNote("");
+    setEditMessage(null);
+  };
+  
+  const saveEditedNote = async (wordNote) => {
+    if (!draftNote.trim()) {
+      setEditMessage("Note cannot be empty.");
+      return;
+    }
+  
+    setIsSavingEdit(true);
+    setEditMessage(null);
+  
+    try {
+      const response = await fetch("/api/word-notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lemma: wordNote.lemma,
+          surface: wordNote.surface,
+          note: draftNote,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to update note");
+      }
+  
+      const data = await response.json();
+  
+      setWordNotes((notes) =>
+        notes.map((note) =>
+          note.id === wordNote.id ? data.wordNote : note
+        )
+      );
+  
+      setEditingNoteId(null);
+      setDraftNote("");
+      setEditMessage("Note updated.");
+    } catch (error) {
+      setEditMessage("Could not update note.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -137,6 +198,9 @@ export default function ReviewNotesPage() {
           </div>
 
           {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+          {editMessage && (
+            <p className="mt-3 text-sm text-stone-600">{editMessage}</p>
+          )}
 
           <p className="mt-3 text-sm text-stone-500">
             {filteredNotes.length} note{filteredNotes.length === 1 ? "" : "s"} shown
@@ -173,13 +237,57 @@ export default function ReviewNotesPage() {
                   )}
                 </div>
 
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-800">
-                  {wordNote.note}
-                </p>
+                {editingNoteId === wordNote.id ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={draftNote}
+                      onChange={(event) => setDraftNote(event.target.value)}
+                      className="min-h-28 w-full resize-y rounded-sm border border-stone-300 bg-white px-3 py-2 text-sm leading-relaxed outline-none focus:border-stone-500"
+                    />
 
-                <p className="mt-3 text-xs text-stone-400">
-                  Updated {new Date(wordNote.updatedAt).toLocaleDateString()}
-                </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => saveEditedNote(wordNote)}
+                        disabled={isSavingEdit}
+                        className="h-8 rounded-sm px-3"
+                      >
+                        {isSavingEdit ? "Saving..." : "Save Changes"}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        onClick={cancelEditingNote}
+                        disabled={isSavingEdit}
+                        variant="outline"
+                        className="h-8 rounded-sm px-3"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-800">
+                      {wordNote.note}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs text-stone-400">
+                        Updated {new Date(wordNote.updatedAt).toLocaleDateString()}
+                      </p>
+
+                      <Button
+                        type="button"
+                        onClick={() => startEditingNote(wordNote)}
+                        variant="outline"
+                        className="h-8 rounded-sm px-3"
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  </>
+                )}
               </article>
             ))
           )}
