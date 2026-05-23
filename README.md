@@ -1,8 +1,10 @@
 # Ancient Greek Interlinear Reader
 
-A full-stack Ancient Greek study platform that converts pasted Greek passages into interlinear vocabulary, lemmas, morphology, and clickable word-level analysis.
+A full-stack Ancient Greek reading and study tool that turns pasted Greek passages into interlinear vocabulary, lemmas, morphology, and clickable word-level analysis.
 
-Originally inspired by NoDictionaries, but focused on Ancient Greek. Users are able to paste passages, parse them into word-level vocabulary, inspect possible morphological analyses, save passages, and create personal lemma-level notes for review.
+I built this project after noticing that Ancient Greek learners often have to jump between a text, a dictionary, and a morphology tool just to understand a passage. This app brings those steps into one interface: paste a passage, parse the words, inspect possible morphological analyses, save passages, and create lemma-level vocabulary notes for review.
+
+The project was inspired by NoDictionaries, but adapted for Ancient Greek.
 
 ## Live Demo
 
@@ -10,15 +12,25 @@ Live Site: **https://interlinear-ancient-greek.vercel.app/**
 
 ## Features
 
-- Parse Ancient Greek word forms using a Dockerized Morpheus morphology API
-- Click individual words to inspect lemma, gloss, part of speech, and morphology
-- Look up definitions using LSJ-based lexical data
-- Improve coverage with Greek normalization, particle handling, elision fallbacks, and curated Homeric gloss overrides
-- Sign in with GitHub authentication
+### Reading and Parsing
+- Paste Ancient Greek passages and preserve original line breaks
+- Parse word forms using a Dockerized Morpheus / Perseids morphology API
+- Click words to inspect lemma, gloss, part of speech, and possible morphology
+- Use LSJ-based lexical data for short English glosses
+
+### Greek-Specific Fallback Handling
+
+- Clean and normalize copied Greek text before parsing
+- Handle common particles and elided forms
+- Add curated Homeric gloss overrides for poetic or difficult forms
+
+
+### User Study Tools
+- Sign in with GitHub
 - Save, load, update, and delete personal passages
-- Save personal notes by lemma, so notes apply across different inflected forms
-- Review and edit saved vocabulary notes on a dedicated review page
-- Display note indicators on words that already have saved notes
+- Save personal notes by lemma, so notes apply across inflected forms
+- Review and edit saved vocabulary notes
+- Display note indicators on words with saved notes
 
 ## Tech Stack
 
@@ -46,9 +58,19 @@ Live Site: **https://interlinear-ancient-greek.vercel.app/**
 
 ## Screenshots
 
+### Reader View
 ![Reader view](public/screenshots/reader.png)
 
+### Word Analysis Panel
 ![Word analysis panel](public/screenshots/word-analysis.png)
 
+### Review Notes Page
 ![Review notes page](public/screenshots/notes.png)
+
+## Current Limitations
+
+- Glosses are automatically selected and may sometimes be broad or poorly ranked.
+- Homeric and poetic forms may require curated overrides.
+- Morpheus can return multiple valid parses for ambiguous Greek forms.
+- The app does not yet perform full contextual disambiguation.
 
